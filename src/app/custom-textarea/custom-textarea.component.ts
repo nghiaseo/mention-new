@@ -1,5 +1,6 @@
 import { Component, ElementRef, HostListener, OnInit } from '@angular/core';
 import { USERS } from '../mock-data';
+import {getCarretPos,getCurrentNode} from './caret'
 @Component({
   selector: 'app-custom-textarea',
   templateUrl: './custom-textarea.component.html',
@@ -13,11 +14,7 @@ export class CustomTextareaComponent implements OnInit {
   mentionConfig = {
     items: USERS,
     triggerChar: '@',
-    mentionSelect: (e: any) => {
-
-      return '##' + e.label + '##';
-
-    }
+    mentionSelect: (e: any) => {return '##' + e.label + '##';}
   }
   constructor(private el: ElementRef) { }
   ngOnInit(): void {
@@ -28,24 +25,38 @@ export class CustomTextareaComponent implements OnInit {
       this.htmlDoc = document.getElementById('text-area');
 
       if (this.htmlDoc) {
+
         this.htmlDoc.innerHTML = this.htmlDoc.innerHTML.replace(
           '##' + e.label + '##',
-          '<span class="mentionText">' + e.label + '</span>&nbsp;'
+          '&nbsp;<span class="mentionText">' + e.label + '</span>&nbsp;'
         );
-        // put the cursor to the end of field again...
-        this.selectEnd();
-      }
+
+        // put the cursor to the end of field again...&nbsp;
+       this.selectEnd();
+             }
     }, 10);
   }
   selectEnd() {
-
     let range, selection;
+
     range = document.createRange();
     if (this.htmlDoc) {
       range.selectNodeContents(this.htmlDoc);
-     let node = this.currentNode==0?1:this.currentNode+2;
-     range.selectNode(this.htmlDoc?.childNodes[node])
-     range.collapse(false);
+     // range.selectNode(this.htmlDoc?.childNodes[this.currentNode+2])
+      if(this.htmlDoc?.childNodes[this.currentNode+2])
+     {
+       range.setStart(this.htmlDoc?.childNodes[this.currentNode+2],1)
+       //range.selectNode(this.htmlDoc?.childNodes[this.currentNode+2])
+       range.setEnd(this.htmlDoc?.childNodes[this.currentNode+2],1)
+     // range.collapse(true);
+    }
+     else
+     {
+      range.setStart(this.htmlDoc?.childNodes[this.currentNode+1],1)
+      range.setEnd(this.htmlDoc?.childNodes[this.currentNode+1],1)
+       //range.selectNode(this.htmlDoc?.childNodes[this.currentNode+1])
+    // range.collapse(true);
+  }
 
     }
     selection = window.getSelection()
@@ -55,76 +66,25 @@ export class CustomTextareaComponent implements OnInit {
     }
   }
   //------------------------------==============================
-  getCaretCharacterOffsetWithin(element: any) {
-    var caretOffset = 0;
-    var doc = element!.ownerDocument || element.document;
-    var win = doc.defaultView || doc.parentWindow;
-    var sel;
-    if (typeof win.getSelection != "undefined") {
-      sel = win.getSelection();
-      if (sel.rangeCount > 0) {
-        var range = win.getSelection().getRangeAt(0);
-        var preCaretRange = range.cloneRange();
-        preCaretRange.selectNodeContents(element);
-        preCaretRange.setEnd(range.endContainer, range.endOffset);
-        caretOffset = preCaretRange.toString().length;
-      }
-    } else if ((sel = doc.selection) && sel.type != "Control") {
-      var textRange = sel.createRange();
-      var preCaretTextRange = doc.body.createTextRange();
-      preCaretTextRange.moveToElementText(element);
-      preCaretTextRange.setEndPoint("EndToEnd", textRange);
-      caretOffset = preCaretTextRange.text.length;
-    }
-    return caretOffset;
-  }
-
 @HostListener('mouseup',['$event'])
 mouseUpEvent(){
-  const caretPos = this.getCaretCharacterOffsetWithin(this.htmlDoc);
-  let tmp = 0;
-  if (this.htmlDoc) {
-    for (let i = 0; i < this.htmlDoc.childNodes.length; i++) {
-      let len = this.htmlDoc.childNodes[i].textContent?.length;
-      if (len) tmp += len;
-      if (len) {
-        if (tmp >= caretPos) {
-          console.log('current node is:', i)
-          this.currentNode = i;
-          break;
-        }
-      }
-    }
+  if(this.htmlDoc)
+  {
+  console.log('current node is :',getCurrentNode(this.htmlDoc))
+  this.currentNode = getCurrentNode(this.htmlDoc)
   }
 
-}
+  }
   @HostListener('keyup', ['$event'])
   keyUpEvent(event:any) {
-    const caretPos = this.getCaretCharacterOffsetWithin(this.htmlDoc);
-    let tmp = 0;
-    if (this.htmlDoc) {
-      for (let i = 0; i < this.htmlDoc.childNodes.length; i++) {
-        let len = this.htmlDoc.childNodes[i].textContent?.length;
-        if (len) tmp += len;
-        if (len) {
-          if (tmp >= caretPos) {
-            console.log('current node is:', i)
-            console.log(this.htmlDoc.childNodes[i].nodeName=='SPAN')
-            if(event.code=='Backspace'){
-              //const txt = this.htmlDoc.childNodes[i].textContent||'';
-              //this.htmlDoc.childNodes[i].replaceWith(txt);
-              if(this.htmlDoc.childNodes[i].nodeName=='SPAN')
-              this.htmlDoc.childNodes[i].remove()
-              this.currentNode--;
-              continue;
+    if(this.htmlDoc){
+      if(this.htmlDoc.innerText[getCarretPos(this.htmlDoc)-1]){
 
-            }
-            this.currentNode = i;
-            break;
-          }
-        }
       }
+      this.currentNode = getCurrentNode(this.htmlDoc)
+  console.log(this.htmlDoc.innerText[getCarretPos(this.htmlDoc)-1],this.htmlDoc.innerText[getCarretPos(this.htmlDoc)])
+
     }
-  }
+      }
 
 }
